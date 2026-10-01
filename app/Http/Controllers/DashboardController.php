@@ -16,9 +16,15 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        return $user->isAdmin()
-            ? $this->adminDashboard($request)
-            : $this->sekolahDashboard($user);
+        if ($user->isAdmin()) {
+            return $this->adminDashboard($request);
+        }
+
+        if ($user->isPuskesmas()) {
+            return $this->puskesmasDashboard($user);
+        }
+
+        return $this->sekolahDashboard($user);
     }
 
     private function adminDashboard(Request $request): View
@@ -32,7 +38,6 @@ class DashboardController extends Controller
         $totalSekolah = (clone $sekolahQuery)->count();
         $totalGuru = (int) (clone $sekolahQuery)->sum('jumlah_guru');
 
-        // Total Siswa = jumlah_siswa_l + jumlah_siswa_p dari semua sekolah (bukan hitung baris Anak lagi)
         $totalSiswaL = (int) (clone $sekolahQuery)->sum('jumlah_siswa_l');
         $totalSiswaP = (int) (clone $sekolahQuery)->sum('jumlah_siswa_p');
         $totalSiswa = $totalSiswaL + $totalSiswaP;
@@ -41,7 +46,6 @@ class DashboardController extends Controller
         $totalAnakTerdata = Anak::when($desaId, fn ($q) => $q->where('desa_id', $desaId))->count();
         $totalStunting = Anak::stunting()->when($desaId, fn ($q) => $q->where('desa_id', $desaId))->count();
 
-        // Rekap per desa untuk tabel & grafik
         $rekapPerDesa = Desa::withCount([
                 'sekolahs',
                 'anaks as total_anak_terdata',
@@ -71,5 +75,24 @@ class DashboardController extends Controller
         $sekolah = $user->sekolah;
 
         return view('dashboard.sekolah', compact('sekolah'));
+    }
+
+    private function puskesmasDashboard(User $user): View
+    {
+        $faskes = $user->faskes;
+
+        $totalAnakTerdata = 0;
+        $totalStunting = 0;
+
+        if ($faskes) {
+            $totalAnakTerdata = $faskes->anaks()->count();
+            $totalStunting = $faskes->anaks()->where('status_stunting', 'Stunting')->count();
+        }
+
+        $persentaseStunting = $totalAnakTerdata > 0
+            ? round(($totalStunting / $totalAnakTerdata) * 100, 1)
+            : 0;
+
+        return view('dashboard.puskesmas', compact('faskes', 'totalAnakTerdata', 'totalStunting', 'persentaseStunting'));
     }
 }

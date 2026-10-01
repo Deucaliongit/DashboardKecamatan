@@ -15,8 +15,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',        // admin_kecamatan | user_sekolah
-        'sekolah_id',  // null untuk admin_kecamatan
+        'role',        // admin_kecamatan | user_sekolah | admin_puskesmas
+        'sekolah_id',  // diisi jika role = user_sekolah
+        'faskes_id',   // diisi jika role = admin_puskesmas
     ];
 
     protected $hidden = [
@@ -37,6 +38,11 @@ class User extends Authenticatable
         return $this->belongsTo(Sekolah::class);
     }
 
+    public function faskes(): BelongsTo
+    {
+        return $this->belongsTo(Faskes::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin_kecamatan';
@@ -45,5 +51,10 @@ class User extends Authenticatable
     public function isUserSekolah(): bool
     {
         return $this->role === 'user_sekolah';
+    }
+
+    public function isPuskesmas(): bool
+    {
+        return $this->role === 'admin_puskesmas';
     }
 }

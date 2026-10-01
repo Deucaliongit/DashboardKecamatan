@@ -16,7 +16,20 @@
     </div>
 
     <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Desa (dipakai jika tidak memilih sekolah)</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Dipegang Puskesmas mana (untuk data kesehatan/stunting)</label>
+        <select name="faskes_id" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">-- Belum ditentukan --</option>
+            @foreach ($faskesList as $f)
+                <option value="{{ $f->id }}" @selected(old('faskes_id', $anak->faskes_id ?? '') == $f->id)>
+                    {{ $f->nama_faskes }} ({{ $f->desa->nama_desa }})
+                </option>
+            @endforeach
+        </select>
+        <p class="text-xs text-gray-400 mt-1">Supaya Puskesmas terkait tetap bisa memantau/menindaklanjuti data ini.</p>
+    </div>
+
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Desa (dipakai jika tidak memilih sekolah/puskesmas)</label>
         <select name="desa_id" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">-- Pilih Desa --</option>
             @foreach ($desas as $d)
@@ -29,7 +42,7 @@
     </div>
 @else
     <div class="mb-4 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
-        Data ini otomatis tercatat di sekolah Anda: <strong>{{ auth()->user()->sekolah->nama_sekolah }}</strong>
+        Data ini otomatis tercatat di fasilitas kesehatan Anda: <strong>{{ auth()->user()->faskes->nama_faskes }}</strong>
     </div>
 @endif
 

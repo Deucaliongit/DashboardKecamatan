@@ -65,7 +65,10 @@
                 <th class="py-3 px-4">Umur</th>
                 <th class="py-3 px-4">Jenis Kelamin</th>
                 <th class="py-3 px-4">Sekolah</th>
-                @if ($isAdmin)<th class="py-3 px-4">Desa</th>@endif
+                @if ($isAdmin)
+                    <th class="py-3 px-4">Faskes</th>
+                    <th class="py-3 px-4">Desa</th>
+                @endif
                 <th class="py-3 px-4">Status</th>
                 <th class="py-3 px-4 text-right">Aksi</th>
             </tr>
@@ -77,7 +80,10 @@
                     <td class="py-3 px-4">{{ $anak->umur }} th</td>
                     <td class="py-3 px-4">{{ $anak->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                     <td class="py-3 px-4">{{ $anak->sekolah->nama_sekolah ?? '-' }}</td>
-                    @if ($isAdmin)<td class="py-3 px-4">{{ $anak->desa->nama_desa }}</td>@endif
+                    @if ($isAdmin)
+                        <td class="py-3 px-4">{{ $anak->faskes->nama_faskes ?? '-' }}</td>
+                        <td class="py-3 px-4">{{ $anak->desa->nama_desa }}</td>
+                    @endif
                     <td class="py-3 px-4">
                         @if ($anak->status_stunting === 'Stunting')
                             <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">Stunting</span>
@@ -97,7 +103,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ $isAdmin ? 7 : 6 }}" class="py-6 px-4 text-center text-gray-400">
+                    <td colspan="{{ $isAdmin ? 8 : 6 }}" class="py-6 px-4 text-center text-gray-400">
                         Tidak ada data yang cocok.
                     </td>
                 </tr>

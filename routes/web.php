@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\AnakController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DesaController;
+use App\Http\Controllers\FaskesController;
 use App\Http\Controllers\SekolahController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,17 +22,21 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Khusus Admin Kecamatan (CRUD Desa, Faskes, Manajemen User)
+    // Khusus Admin Kecamatan (CRUD Desa, Manajemen User)
     Route::middleware('role:admin_kecamatan')->group(function () {
         Route::resource('desa', DesaController::class)->except('show');
-        // Route::resource('faskes', FaskesController::class);
         // Route::resource('users', UserController::class);
         // -> ditambahkan di tahap berikutnya
     });
 
-    // Admin & User Sekolah sama-sama boleh akses (query & otorisasi dibatasi di controller)
+    // Admin Kecamatan & Admin Sekolah (sekolah dibatasi ke miliknya sendiri di controller)
     Route::middleware('role:admin_kecamatan,user_sekolah')->group(function () {
         Route::resource('sekolah', SekolahController::class)->except('show');
+    });
+
+    // Admin Kecamatan & Admin Puskesmas (faskes & anak dibatasi ke miliknya sendiri di controller)
+    Route::middleware('role:admin_kecamatan,admin_puskesmas')->group(function () {
+        Route::resource('faskes', FaskesController::class)->except('show');
         Route::resource('anak', AnakController::class)->except('show');
     });
 });

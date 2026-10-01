@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AnakRequest;
 use App\Models\Anak;
 use App\Models\Desa;
+use App\Models\Faskes;
 use App\Models\Sekolah;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -30,13 +31,15 @@ class AnakController extends Controller
         $statusStunting = (string) $request->query('status_stunting', '');
         $cari = (string) $request->query('cari', '');
 
-        $query = Anak::with(['sekolah', 'desa']);
+        $query = Anak::with(['sekolah', 'faskes', 'desa']);
 
         if ($isAdmin) {
             $query->when($desaId, fn ($q) => $q->where('desa_id', $desaId));
+        } elseif ($user->isPuskesmas()) {
+            abort_unless($user->faskes_id, 403, 'Akun Anda belum terhubung ke fasilitas kesehatan manapun.');
+            $query->where('faskes_id', $user->faskes_id);
         } else {
-            abort_unless($user->sekolah_id, 403, 'Akun Anda belum terhubung ke sekolah manapun.');
-            $query->where('sekolah_id', $user->sekolah_id);
+            abort(403, 'Anda tidak memiliki akses ke modul ini.');
         }
 
         if ($cari !== '') {
@@ -63,10 +66,13 @@ class AnakController extends Controller
     {
         $user = $request->user();
 
+        abort_unless($user->isAdmin() || $user->isPuskesmas(), 403, 'Anda tidak memiliki akses ke modul ini.');
+
         $desas = $user->isAdmin() ? Desa::orderBy('nama_desa')->get() : collect();
         $sekolahs = $user->isAdmin() ? Sekolah::with('desa')->orderBy('nama_sekolah')->get() : collect();
+        $faskesList = $user->isAdmin() ? Faskes::with('desa')->orderBy('nama_faskes')->get() : collect();
 
-        return view('anak.create', compact('desas', 'sekolahs'));
+        return view('anak.create', compact('desas', 'sekolahs', 'faskesList'));
     }
 
     public function store(AnakRequest $request): RedirectResponse
@@ -75,13 +81,17 @@ class AnakController extends Controller
         $data = $request->validated();
 
         if ($user->isAdmin()) {
-            // Kalau sekolah dipilih, samakan desa_id dengan desa sekolah tsb agar data tetap konsisten
+            // Prioritas desa_id: ikut Sekolah > ikut Faskes > input manual admin
             if (! empty($data['sekolah_id'])) {
                 $data['desa_id'] = Sekolah::findOrFail($data['sekolah_id'])->desa_id;
+            } elseif (! empty($data['faskes_id'])) {
+                $data['desa_id'] = Faskes::findOrFail($data['faskes_id'])->desa_id;
             }
         } else {
-            $data['sekolah_id'] = $user->sekolah_id;
-            $data['desa_id'] = $user->sekolah->desa_id;
+            // Admin Puskesmas: data otomatis terkunci ke faskes & desa miliknya sendiri
+            $data['sekolah_id'] = null;
+            $data['faskes_id'] = $user->faskes_id;
+            $data['desa_id'] = $user->faskes->desa_id;
         }
 
         Anak::create($data);
@@ -96,8 +106,9 @@ class AnakController extends Controller
         $user = $request->user();
         $desas = $user->isAdmin() ? Desa::orderBy('nama_desa')->get() : collect();
         $sekolahs = $user->isAdmin() ? Sekolah::with('desa')->orderBy('nama_sekolah')->get() : collect();
+        $faskesList = $user->isAdmin() ? Faskes::with('desa')->orderBy('nama_faskes')->get() : collect();
 
-        return view('anak.edit', compact('anak', 'desas', 'sekolahs'));
+        return view('anak.edit', compact('anak', 'desas', 'sekolahs', 'faskesList'));
     }
 
     public function update(AnakRequest $request, Anak $anak): RedirectResponse
@@ -108,9 +119,12 @@ class AnakController extends Controller
         if ($user->isAdmin()) {
             if (! empty($data['sekolah_id'])) {
                 $data['desa_id'] = Sekolah::findOrFail($data['sekolah_id'])->desa_id;
+            } elseif (! empty($data['faskes_id'])) {
+                $data['desa_id'] = Faskes::findOrFail($data['faskes_id'])->desa_id;
             }
         } else {
             $data['sekolah_id'] = $anak->sekolah_id;
+            $data['faskes_id'] = $anak->faskes_id;
             $data['desa_id'] = $anak->desa_id;
         }
 
@@ -133,7 +147,7 @@ class AnakController extends Controller
         $user = $request->user();
 
         abort_unless(
-            $user->isAdmin() || $user->sekolah_id === $anak->sekolah_id,
+            $user->isAdmin() || ($user->isPuskesmas() && $user->faskes_id === $anak->faskes_id),
             403,
             'Anda tidak memiliki akses ke data anak ini.'
         );

@@ -16,12 +16,11 @@ class DatabaseSeeder extends Seeder
      * Seeder ini membuat:
      * - 1 akun Admin Kecamatan
      * - 5 Desa
-     * - 2 Faskes per desa (Puskesmas + Posyandu)
-     * - 2-3 Sekolah per desa (jenjang acak SD/SMP/SMA)
-     * - 1 akun User Sekolah per sekolah
-     * - 10-20 siswa per sekolah (tanggal lahir sesuai rentang umur jenjangnya)
-     * - 8-15 data balita per desa (usia 0-5 th) untuk data stunting,
-     *   ~25% di antaranya berstatus "Stunting"
+     * - 2 Faskes per desa (Puskesmas + Posyandu), masing-masing Puskesmas dapat 1 akun Admin Puskesmas
+     * - 2-3 Sekolah per desa (jenjang acak SD/SMP/SMA), jumlah siswa L/P diinput langsung (bukan per individu)
+     * - 1 akun Admin Sekolah (role: user_sekolah) per sekolah
+     * - 8-15 data balita per desa (usia 0-5 th), dipegang Puskesmas desa tsb, untuk data stunting
+     *   (~25% di antaranya berstatus "Stunting")
      */
     public function run(): void
     {
@@ -48,7 +47,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ($desas as $desa) {
             // 3. Fasilitas Kesehatan per desa
-            Faskes::create([
+            $puskesmas = Faskes::create([
                 'desa_id' => $desa->id,
                 'nama_faskes' => 'Puskesmas '.$desa->nama_desa,
                 'jenis' => 'Puskesmas',
@@ -60,6 +59,17 @@ class DatabaseSeeder extends Seeder
                 'nama_faskes' => 'Posyandu '.$desa->nama_desa,
                 'jenis' => 'Posyandu',
                 'jumlah_tenaga_medis' => rand(2, 6),
+            ]);
+
+            // Akun Admin Puskesmas untuk Puskesmas desa ini
+            $emailPuskesmas = str()->slug($puskesmas->nama_faskes);
+
+            User::create([
+                'name' => 'Admin '.$puskesmas->nama_faskes,
+                'email' => $emailPuskesmas.'@puskesmas.go.id',
+                'password' => Hash::make('password'),
+                'role' => 'admin_puskesmas',
+                'faskes_id' => $puskesmas->id,
             ]);
 
             // 4. Sekolah per desa (2-3 sekolah, jenjang acak)
@@ -99,6 +109,7 @@ class DatabaseSeeder extends Seeder
 
                 Anak::create([
                     'sekolah_id' => null,
+                    'faskes_id' => $puskesmas->id,
                     'desa_id' => $desa->id,
                     'nama_anak' => fake('id_ID')->name(),
                     'tanggal_lahir' => $tanggalLahir,

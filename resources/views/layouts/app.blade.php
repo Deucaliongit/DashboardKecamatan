@@ -32,16 +32,24 @@
                    class="block px-3 py-2 rounded {{ request()->routeIs('anak.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
                     Data Anak &amp; Stunting
                 </a>
-                <span class="block px-3 py-2 rounded opacity-40 cursor-not-allowed">Fasilitas Kesehatan (segera)</span>
+                <a href="{{ route('faskes.index') }}"
+                   class="block px-3 py-2 rounded {{ request()->routeIs('faskes.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                    Fasilitas Kesehatan
+                </a>
                 <span class="block px-3 py-2 rounded opacity-40 cursor-not-allowed">Manajemen User (segera)</span>
-            @else
+            @elseif (auth()->user()->isUserSekolah())
                 <a href="{{ route('sekolah.index') }}"
                    class="block px-3 py-2 rounded {{ request()->routeIs('sekolah.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
                     Sekolah Saya
                 </a>
+            @elseif (auth()->user()->isPuskesmas())
+                <a href="{{ route('faskes.index') }}"
+                   class="block px-3 py-2 rounded {{ request()->routeIs('faskes.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
+                    Faskes Saya
+                </a>
                 <a href="{{ route('anak.index') }}"
                    class="block px-3 py-2 rounded {{ request()->routeIs('anak.*') ? 'bg-gray-800 text-white' : 'hover:bg-gray-800' }}">
-                    Data Siswa &amp; Stunting
+                    Data Anak &amp; Stunting
                 </a>
             @endif
         </nav>
